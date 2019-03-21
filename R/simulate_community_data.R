@@ -103,6 +103,8 @@ simulate_community <- function(nspecies, nind, min_mass, max_mass)
   individual_sizes <- simulate_ind_mass(individual_species_ids, species_sizes)
 
   community_df <- cbind(individual_species_ids, individual_sizes)
+  
+  community_df <- as.data.frame(community_df)
 
   return(community_df)
 }
