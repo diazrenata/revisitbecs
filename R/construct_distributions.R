@@ -9,7 +9,7 @@
 #'
 #' @export
 
-make_community_table <- function(community_df, ln_units = 0.2)
+make_community_table <- function(sim_community, ln_units = 0.2)
 {
   
   community_df <-sim_community %>%
@@ -33,7 +33,7 @@ make_community_table <- function(community_df, ln_units = 0.2)
 #'
 #' @export
 
-make_bsed <- function(community_df)
+make_bsed <- function(community_df, decimals = NULL)
 {
   
   bsed <- community_df %>%
@@ -42,6 +42,10 @@ make_bsed <- function(community_df)
     dplyr::ungroup() %>%
     dplyr::mutate(total_energy_proportional = total_energy / sum(total_energy))
   
+  if(!is.null(decimals)) {
+    bsed <- bsed %>%
+      dplyr::mutate(size_class_g = round(size_class_g, digits = decimals))
+  }
   
   return(bsed)
 }

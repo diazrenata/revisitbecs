@@ -5,26 +5,161 @@ date: "3/21/2019"
 output: github_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+```{r setup}
+library(revisitbecs)
+library(ggplot2)
 ```
 
-## R Markdown
+# Simulate a set of 9 "real" communities
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+```{r simulate "real" data}
+ncommunities = 9
+set.seed(20)
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+real_communities <- list()
 
-```{r cars}
-summary(cars)
+for(i in 1:ncommunities) {
+  nspecies = sample(5:20, size = 1)
+  nind = sample(50:250, size = 1)
+  min_mass = sample(5:15, size= 1)
+  max_mass = sample(40:250, size=1)
+  
+  real_communities[[i]] <- simulate_community(nspecies = nspecies,
+                                              nind = nind,
+                                              min_mass = min_mass,
+                                              max_mass = max_mass)
+}
+
+str(real_communities)
+
+community_tables <- list()
+
+for(i in 1:ncommunities){
+  community_tables[[i]] <- make_community_table(sim_community = real_communities[[i]])
+}
+
+str(community_tables)
+
 ```
 
-## Including Plots
 
-You can also embed plots, for example:
+# Construct BSEDs for those communities
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r make real bseds}
+
+real_bseds <- list()
+
+for(i in 1:ncommunities){
+  real_bseds[[i]] <- make_bsed(community_tables[[i]], decimals = 1)
+}
+
+str(real_bseds)
+
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+# Plot them 
+
+```{r plot real BSEDS, fig.width = 6, fig.height = 4}
+
+
+for(i in 1:ncommunities) {
+  bsed_plot = ggplot(data = real_bseds[[i]], aes(x = size_class, y = total_energy_proportional)) +
+    geom_bar(stat = 'identity', aes(x = as.factor(real_bseds[[i]]$size_class_g), y = real_bseds[[i]]$total_energy_proportional)) +
+    ggtitle(paste0("BSED for community ", i)) +
+    theme_bw()
+  
+  print(bsed_plot)
+  
+}
+
+```
+
+
+# Calculate and plot energetic dominance
+
+```{r energetic dominance for real communities}
+
+dominance_values <- vector(mode = "numeric")
+
+for(i in 1:ncommunities) {
+  these_modes <- energetic_dominance(community_tables[[i]])
+  
+  these_modes <- these_modes %>%
+    dplyr::select(mode_id, e_dominance) %>%
+    dplyr::distinct()
+  
+  dominance_values <- c(dominance_values, these_modes$e_dominance)
+}
+
+anyNA(dominance_values)
+
+dominance_values <- as.data.frame(dominance_values)
+
+e_dominance_plot <- ggplot(data = dominance_values) + 
+  geom_histogram(binwidth = 0.1, aes(x = dominance_values)) +
+  xlim(-0.1, 1.1) + 
+  theme_bw()
+
+e_dominance_plot
+
+```
+
+# Compare each real BSED to 10000 bootstraps (DOI 95% interval)
+
+```{r bootstrap BSEDs compared to uniform, eval = F}
+nsamples = 100
+for(i in 1:ncommunities){ 
+  sampled_communities_doi <- replicate(nsamples, boostrap_unif_bsed_doi(real_communities[[i]]))
+  
+  real_doi <- doi(real_bseds[[i]]$total_energy_proportional)
+  
+  p_greater_doi <- length(which(sampled_communities_doi > real_doi)) / nsamples
+  
+  print(p_greater_doi)
+  
+}
+
+
+```
+
+# Compare all pairwise communities BSEDs
+
+```{r bootstrap BSEDs compared to each other}
+
+nsamples = 100
+
+all_pairs_matrix <- combn(1:ncommunities, m = 2)
+
+p_comparison <- vector(length = ncol(all_pairs_matrix), mode = 'numeric')
+
+for(i in 1:ncol(all_pairs_matrix)) {
+  
+  first = all_pairs_matrix[1, i]
+    second = all_pairs_matrix[2, i]
+sampled_pair_doi <- replicate(nsamples, boostrap_crosscomm_bseds(real_communities[[first]], real_communities[[second]]))
+
+
+both_bseds <- real_bseds[[first]] %>%
+  dplyr::full_join(real_bseds[[second]], by = c("size_class", "size_class_g")) %>%
+  dplyr::mutate(total_energy_proportional.x = replace(total_energy_proportional.x, is.na(total_energy_proportional.x), 0),
+                total_energy_proportional.y = replace(total_energy_proportional.y, is.na(total_energy_proportional.y), 0))
+
+real_doi <- doi(both_bseds$total_energy_proportional.x,
+                both_bseds$total_energy_proportional.y)
+
+p_greater_doi <- length(which(sampled_pair_doi > real_doi)) / nsamples
+
+p_comparison[i] <- p_greater_doi
+}
+
+p_comparison
+
+```
+
+# Construct BSDs for real communities
+
+# Plot them
+
+# Compare each real BSD to uniform (d-corrected KS)
+
+# Compare all pairwise communities BSDs (KS)

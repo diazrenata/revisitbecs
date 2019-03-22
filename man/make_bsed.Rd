@@ -4,7 +4,7 @@
 \alias{make_bsed}
 \title{Construct BSED from df with size classes}
 \usage{
-make_bsed(community_df)
+make_bsed(community_df, decimals = NULL)
 }
 \arguments{
 \item{community_df}{df of species ids, individual sizes, energy, and size class}

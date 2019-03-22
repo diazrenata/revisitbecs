@@ -2,18 +2,19 @@
 % Please edit documentation in R/bootstrap_sampling.R
 \name{boostrap_crosscomm_bseds}
 \alias{boostrap_crosscomm_bseds}
-\title{Bootstrap sample community masses from two communities}
+\title{Get DOI for bootstrap sampled community masses from two communities}
 \usage{
 boostrap_crosscomm_bseds(community_a, community_b)
 }
 \arguments{
-\item{community_a}{vector of masses for first community}
+\item{community_df_a}{community data frame for first community}
 
-\item{community_b}{vector of masses for second community}
+\item{community_df_b}{community data frame for second community}
 }
 \value{
-list of 2 vectors: masses for first resample community, masses for second resample community.
+doi
 }
 \description{
 Pool all individual masses from communities and randomly re-draw communities with the original number of individuals from the pool, with replacement.
+Calculate the DOI of these new communities.
 }

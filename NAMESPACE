@@ -2,7 +2,7 @@
 
 export("%>%")
 export(boostrap_crosscomm_bseds)
-export(boostrap_unif_bsed)
+export(boostrap_unif_bsed_doi)
 export(doi)
 export(download_raw_paper_data)
 export(draw_single_mass)
