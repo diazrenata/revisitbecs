@@ -124,7 +124,7 @@ for(i in 1:ncommunities){
 
 # Compare all pairwise communities BSEDs
 
-```{r bootstrap BSEDs compared to each other}
+```{r bootstrap BSEDs compared to each other, eval = F}
 
 nsamples = 100
 
@@ -154,12 +154,69 @@ p_comparison[i] <- p_greater_doi
 
 p_comparison
 
+length(which(p_comparison > 0.05)) / length(p_comparison)
+
 ```
 
 # Construct BSDs for real communities
 
+```{r make real BSDs}
+real_bsds <- list()
+for(i in 1:ncommunities) {
+  real_bsds[[i]] <- make_bsd(community_tables[[i]], decimals = 2)
+}
+```
+
 # Plot them
+
+```{r plot real BSDs} 
+
+for(i in 1:ncommunities){ 
+  this_bsd <- real_bsds[[i]]
+  bsd_plot <- ggplot(data = this_bsd, aes(x = size_class, y =  n_species_proportional)) +
+    geom_point(data = this_bsd, aes(x = as.factor(size_class_g), y= n_species_proportional)) + 
+    theme_bw()
+  print(bsd_plot)
+  }
+
+```
 
 # Compare each real BSD to uniform (d-corrected KS)
 
+```{r compare bsds to uniform}
+for (i in 1:ncommunities) {
+  this_bsd <- real_bsds[[i]]
+  this_ks <- ks.test(this_bsd$n_species_proportional, punif)
+  print(this_ks$p.value)
+}
+
+```
+
+
 # Compare all pairwise communities BSDs (KS)
+
+```{r pairwise BSD comparisons}
+
+all_pairs_matrix <- combn(1:ncommunities, m = 2)
+
+ks_p_comparison <- vector(length = ncol(all_pairs_matrix), mode = 'numeric')
+
+for(i in 1:ncol(all_pairs_matrix)) {
+  
+  first = all_pairs_matrix[1, i]
+    second = all_pairs_matrix[2, i]
+
+both_bsds <- real_bsds[[first]] %>%
+  dplyr::full_join(real_bsds[[second]], by = c("size_class", "size_class_g")) %>%
+  dplyr::mutate(n_species_proportional.x = replace(n_species_proportional.x, is.na(n_species_proportional.x), 0),
+                n_species_proportional.y = replace(n_species_proportional.y, is.na(n_species_proportional.y), 0))
+
+ks_comparison <- ks.test(both_bsds$n_species_proportional.x,
+                both_bsds$n_species_proportional.y)
+ks_p_comparison[i] <- ks_comparison$p.value
+}
+
+ks_p_comparison
+
+length(which(ks_p_comparison < 0.05))
+```

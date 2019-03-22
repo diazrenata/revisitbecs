@@ -4,7 +4,7 @@
 \alias{make_bsd}
 \title{Construct BSD from df with community data}
 \usage{
-make_bsd(community_df, ln_units = 0.2)
+make_bsd(community_df, ln_units = 0.2, decimals = NULL)
 }
 \arguments{
 \item{community_table}{df of species ids, individual sizes, energy, and size class}

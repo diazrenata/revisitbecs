@@ -143,7 +143,7 @@ energetic_dominance <- function(community_df)
 #'
 #' @export
 
-make_bsd <- function(community_df, ln_units = 0.2)
+make_bsd <- function(community_df, ln_units = 0.2, decimals = NULL)
 {
   
   bsd <- community_df %>%
@@ -156,7 +156,13 @@ make_bsd <- function(community_df, ln_units = 0.2)
     size_class_g = exp(size_class)) %>%
   dplyr::group_by(size_class, size_class_g) %>%
     dplyr::summarize(n_species = n()) %>%
-    dplyr::ungroup()
+    dplyr::ungroup() %>%
+    dplyr::mutate(n_species_proportional = n_species/sum(n_species))
+  
+  if(!is.null(decimals)) {
+    bsd <- bsd %>%
+      dplyr::mutate(size_class_g = round(size_class_g, digits = decimals))
+  }
   
   return(bsd)
 }
