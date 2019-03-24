@@ -12,6 +12,10 @@ library(ggplot2)
 
 # Simulate a set of 9 "real" communities
 
+To develop & test the pipeline, we will work with a set of simulated communities. We will randomly generate community data frames, in the form of records of individual "rodents" with species ID (1:nspecies) and mass (in g). 
+
+For our simulated communities, we will pick a mean mass for each species in the community. Then we will randomly assign a species ID to each individual in the community, and randomly give a mass to each individual by drawing from a normal distribution centered on that species' mean mass. 
+
 ```{r simulate "real" data}
 ncommunities = 9
 set.seed(20)
@@ -30,20 +34,25 @@ for(i in 1:ncommunities) {
                                               max_mass = max_mass)
 }
 
-str(real_communities)
 
+```
+
+
+Many parts of this analysis use the "raw" community data, which is what we would collect in the field or simulate above, to construct body size-energy distributions. For this we need to 1) estimate each individual's energy use (as $m^{3/4}$ where $m$ is mass in g) and 2) assign each individual to a size class. We will divide the communities into size classes of .2 log units. 
+
+```{r make community tables}
 community_tables <- list()
 
 for(i in 1:ncommunities){
   community_tables[[i]] <- make_community_table(sim_community = real_communities[[i]])
 }
 
-str(community_tables)
-
 ```
 
 
 # Construct BSEDs for those communities
+
+Now we can construct a body size-energy distribution for each community. This is a summary, for each size class, of how much energy all the individuals (regardless of species ID) in that size class use. We will work with these distributions standardized according to the total energy used by the whole community. 
 
 ```{r make real bseds}
 
@@ -53,13 +62,11 @@ for(i in 1:ncommunities){
   real_bseds[[i]] <- make_bsed(community_tables[[i]], decimals = 1)
 }
 
-str(real_bseds)
-
 ```
 
-# Plot them 
+# BSED plots 
 
-```{r plot real BSEDS, fig.width = 6, fig.height = 4}
+```{r plot real BSEDS, fig.width = 6, fig.height = 4, echo = F}
 
 
 for(i in 1:ncommunities) {
