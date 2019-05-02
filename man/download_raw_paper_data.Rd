@@ -11,4 +11,5 @@ download_raw_paper_data(datapath = here::here("data", "paper", "raw"))
 }
 \description{
 Download datasets used in Ernest 2005.
+Only downloads if the relevant folders do not exist in the `datapath`.
 }
