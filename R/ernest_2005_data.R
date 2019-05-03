@@ -22,8 +22,8 @@ download_raw_paper_data <- function(datapath = here::here('data', 'paper', 'raw'
     
     dir.create(paste0(datapath, '/niwot'))
     
-    download.file('https://portal.lternet.edu/nis/dataviewer?packageid=knb-lter-nwt.43.3&entityid=0dfd551cf702d8801148da7d8727c1c7', (paste0(datapath, '/niwot/niwot.csv')))
-    download.file('https://portal.lternet.edu/nis/metadataviewer?packageid=knb-lter-nwt.43.3&contentType=application/xml', (paste0(datapath, '/niwot/niwot-metadata.xml')))
+    download.file('http://niwot.colorado.edu/data_csvs/smammals.jh.data.csv', (paste0(datapath, '/niwot/niwot.csv')))
+    download.file('http://niwot.colorado.edu/meta_data/smammals.jh.meta.txt', (paste0(datapath, '/niwot/niwot-metadata.txt')))
     
   }
   
@@ -66,6 +66,7 @@ process_andrews_data <- function() {
 
 #' @title Process Niwot data in to the appropriate format. 
 #'
+#' @param datapath path to where data is 
 #' @description Process Niwot smammal data
 #' Initial cleaning from LTER website code generator
 #'
@@ -119,11 +120,15 @@ process_niwot_data <- function(datapath = here::here('data', 'paper', 'raw', 'ni
   
   if (class(dt1$collector)!="factor") dt1$collector<- as.factor(dt1$collector)                                   
   # attempting to convert dt1$date dateTime string to R date structure (date or POSIXct)                                
-  tmpDateFormat<-"%m/%d/%Y"
+  tmpDateFormat<-"%Y-%m-%d"
   tmp1date<-as.Date(dt1$date,format=tmpDateFormat)
   # Keep the new dates only if they all converted correctly
-  if(length(tmp1date) == length(tmp1date[!is.na(tmp1date)])){dt1$date <- tmp1date } else {print("Date conversion failed for dt1$date. Please inspect the data and do the date conversion yourself.")}                                                                    
+  # if(length(tmp1date) == length(tmp1date[!is.na(tmp1date)])){dt1$date <- tmp1date } else {print("Date conversion failed for dt1$date. Please inspect the data and do the date conversion yourself.")}                                                         
+  # Dates for row 1599 and 3741 are missing, so use tmp1date anyway
+  dt1$date <- tmp1date 
+  
   rm(tmpDateFormat,tmp1date) 
+  
   if (class(dt1$sex)!="factor") dt1$sex<- as.factor(dt1$sex)
   if (class(dt1$species)!="factor") dt1$species<- as.factor(dt1$species)
   if (class(dt1$animal.identification.number)!="factor") dt1$animal.identification.number<- as.factor(dt1$animal.identification.number)
@@ -149,6 +154,30 @@ process_niwot_data <- function(datapath = here::here('data', 'paper', 'raw', 'ni
   if (class(dt1$habitat)!="factor") dt1$habitat<- as.factor(dt1$habitat)
   
   # MODIFICATIONS FROM LTER CODE #
+  
+  niwot <- dt1 %>% 
+    filter(!is.na(weight)) %>%
+    mutate(species = as.character(species)) %>%
+    filter(species != "?MOUSE") %>%
+    filter(species != "?PIKAS") %>%
+    filter(species != "CHIPSP") %>%
+    filter(species != "NaN") %>%
+    filter(species != "VOLESP") %>%
+    select(collector, date, species, weight, condition.of.animal, habitat)
+  
+  species_means <- niwot %>%
+    select(species, weight) %>%
+    group_by(species) %>%
+    summarize(mean.weight = mean(weight)) %>%
+    ungroup()
+  
+  big_species <- species_means %>%
+    filter(mean.weight > 400) %>%
+    select(species)
+  
+  niwot <- niwot %>%
+    filter(!(species %in% big_species$species))
+  
 }
 
 
