@@ -153,3 +153,61 @@ process_niwot_data <- function(datapath = here::here('data', 'paper', 'raw', 'ni
 
 
 
+
+#' @title Process Sevilleta data in to the appropriate format. 
+#'
+#' @description Process Sevilleta smammal data
+#' Initial cleaning from LTER website code generator
+#'
+#' @return NULL
+#'
+process_sev_data <- function(datapath = here::here('data', 'paper', 'raw', 'sev')){
+  # FROM LTER WEBSITE #
+    # Package ID: knb-lter-sev.8.297976 Cataloging System:https://pasta.lternet.edu.
+  # Data set title: Small Mammal Mark-Recapture Population Dynamics at Core Research Sites at the Sevilleta National Wildlife Refuge, New Mexico (1989 - present).
+  # Data set creator:  Seth Newsome - University of New Mexico 
+  # Metadata Provider:  Information Manager Sevilleta LTER -  
+  # Contact:    - Information Manager LTER Network Office  - tech-support@lternet.edu
+  # Contact:  Information Manager Sevilleta LTER -    - data-use@sevilleta.unm.edu
+  # Metadata Link: https://portal.lternet.edu/nis/metadataviewer?packageid=knb-lter-sev.8.297976
+  # Stylesheet for metadata conversion into program: John H. Porter, Univ. Virginia, jporter@Virginia.edu 
+  #
+  #install package tidyverse if not already installed
+  if(!require(tidyverse)){ install.packages("tidyverse") }  
+  library("tidyverse") 
+  infile1  <- paste0(datapath, '/sev.csv') 
+  # This creates a tibble named: dt1 
+  dt1 <-read_delim(infile1  
+                   ,delim=","   
+                   ,skip=1 
+                   , col_names=c( 
+                     "year",   
+                     "location",   
+                     "season",   
+                     "night",   
+                     "web",   
+                     "trap",   
+                     "recap",   
+                     "species",   
+                     "sex",   
+                     "age",   
+                     "reprod",   
+                     "mass"   ), 
+                   col_types=list(
+                     col_character(),  
+                     col_character(),  
+                     col_character(),  
+                     col_character(),  
+                     col_character(),  
+                     col_character(),  
+                     col_character(),  
+                     col_character(),  
+                     col_character(),  
+                     col_character(),  
+                     col_character(), 
+                     col_number() ), 
+                   na=c( "na", ".", " ","NA")  ) 
+  # Observed issues when reading the data. An empty list is good!
+  problems(dt1) 
+ 
+}
