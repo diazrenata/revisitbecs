@@ -16,31 +16,32 @@ download_raw_paper_data <- function(datapath = here::here('data', 'paper', 'raw'
   if(!dir.exists(paste0(datapath, '/andrews-lter'))) {
     dir.create(paste0(datapath, '/andrews-lter'))
   }
-    download.file('http://andlter.forestry.oregonstate.edu/ltermeta/ltersearch/dataaccess.aspx?docid=WE02601_v1.csv', (paste0(datapath, '/andrews-lter/andrews.csv')))
-    download.file('http://andlter.forestry.oregonstate.edu/mdaccess/metadownload.aspx?dbcode=WE026', (paste0(datapath, '/andrews-lter/andrews-metadata.pdf')))
-
+  download.file('http://andlter.forestry.oregonstate.edu/ltermeta/ltersearch/dataaccess.aspx?docid=WE02601_v1.csv', (paste0(datapath, '/andrews-lter/andrews.csv')))
+  download.file('http://andlter.forestry.oregonstate.edu/mdaccess/metadownload.aspx?dbcode=WE026', (paste0(datapath, '/andrews-lter/andrews-metadata.pdf')))
+  download.file('http://andlter.forestry.oregonstate.edu/ltermeta/ltersearch/dataaccess.aspx?docid=SA00501_v2.csv', paste0(datapath, '/andrews-lter/andrews-specieslist.csv'))
+  
   
   if(!dir.exists(paste0(datapath, '/niwot'))) {
     
     dir.create(paste0(datapath, '/niwot'))
     
   }
-    
-    download.file('http://niwot.colorado.edu/data_csvs/smammals.jh.data.csv', (paste0(datapath, '/niwot/niwot-raw.csv')))
-    download.file('http://niwot.colorado.edu/meta_data/smammals.jh.meta.txt', (paste0(datapath, '/niwot/niwot-metadata.txt')))
-    
-
+  
+  download.file('http://niwot.colorado.edu/data_csvs/smammals.jh.data.csv', (paste0(datapath, '/niwot/niwot-raw.csv')))
+  download.file('http://niwot.colorado.edu/meta_data/smammals.jh.meta.txt', (paste0(datapath, '/niwot/niwot-metadata.txt')))
+  
+  
   
   if(!dir.exists(paste0(datapath, '/sev'))) {
     
     dir.create(paste0(datapath, '/sev'))
     
   }
-    
-    download.file('https://portal.lternet.edu/nis/dataviewer?packageid=knb-lter-sev.8.297976&entityid=d70c7027949ca1d8ae053eb10300dc0e', (paste0(datapath, '/sev/sev.csv')))
-    download.file('https://portal.lternet.edu/nis/metadataviewer?packageid=knb-lter-sev.8.297976&contentType=application/xml', (paste0(datapath, '/sev/sev-metadata.')))
-    
-
+  
+  download.file('https://portal.lternet.edu/nis/dataviewer?packageid=knb-lter-sev.8.297976&entityid=d70c7027949ca1d8ae053eb10300dc0e', (paste0(datapath, '/sev/sev.csv')))
+  download.file('https://portal.lternet.edu/nis/metadataviewer?packageid=knb-lter-sev.8.297976&contentType=application/xml', (paste0(datapath, '/sev/sev-metadata.')))
+  
+  
   
 }
 
@@ -66,12 +67,51 @@ process_raw_data <- function() {
 #'
 #' @export
 
-process_andrews_data <- function() {
+process_andrews_data <- function(datapath = here::here()) {
   
+  andrews_raw <- read.csv(paste0(datapath, '/data/paper/raw/andrews-lter/andrews.csv'), stringsAsFactors = F)
+  
+  andrews <- andrews_raw %>%
+    as.data.frame() %>%
+    `names<-`(tolower(names(.))) %>%
+    dplyr::filter(month >= 7, year <= 1999, !is.na(weight))
+  
+  andrews_species <-  read.csv(paste0(datapath, '/data/paper/raw/andrews-lter/andrews-specieslist.csv'), stringsAsFactors = F)
+  
+  andrews_rod <- andrews_species %>%
+    as.data.frame() %>%
+    `names<-`(tolower(names(.))) %>%
+    dplyr::select(tax_order, genus, species, subspecies) %>%
+    dplyr::mutate(spcode = paste0(substr(genus, 0, 2), substr(species,0,2))) %>%
+    dplyr::mutate(spcode = toupper(spcode)) %>%
+    dplyr::select(tax_order, spcode) %>%
+    dplyr::rename(species = spcode)
+  
+  
+  andrews_means <- andrews %>%
+    dplyr::select(species, weight) %>%
+    dplyr::group_by(species) %>%
+    dplyr::summarize(meanweight = mean(weight), nind = dplyr::n()) %>% 
+    dplyr::left_join(andrews_rod, by = 'species') %>%
+    dplyr::filter(!is.na(tax_order)) %>%
+    dplyr::filter(meanweight <= 400)
+  
+  andrews <- andrews %>%
+    dplyr::filter(species %in% andrews_means$species) %>%
+    dplyr::select(species, weight)
+  
+  processedpath = paste0(datapath, '/data/paper/processed')
+  if(!dir.exists(processedpath)) {
+    dir.create(processedpath)
+  }
+  
+  write.csv(andrews, paste0(processedpath, '/andrews-processed.csv'))
+  
+  return(TRUE)
   
 }
 
-#' @title Process Niwot data in to the appropriate format. 
+#' @title Process Niwot data into the appropriate format. 
 #' @name ProcessNiwot
 #' @param datapath path to where data is 
 #' @description Process Niwot smammal data
@@ -122,9 +162,9 @@ process_niwot_data <- function(datapath = here::here()){
   }
   
   write.csv(niwot, paste0(processedpath, '/niwot-processed.csv'))
- 
+  
   return(TRUE)
-   
+  
 }
 
 
