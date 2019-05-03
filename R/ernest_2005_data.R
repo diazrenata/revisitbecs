@@ -1,5 +1,7 @@
 #' @title Download raw paper data
 #'
+#' @name DownloadPaperData
+#'
 #' @description Download datasets used in Ernest 2005.
 #' Only downloads if the relevant folders do not exist in the `datapath`. 
 #'
@@ -13,34 +15,39 @@ download_raw_paper_data <- function(datapath = here::here('data', 'paper', 'raw'
   
   if(!dir.exists(paste0(datapath, '/andrews-lter'))) {
     dir.create(paste0(datapath, '/andrews-lter'))
-    
+  }
     download.file('http://andlter.forestry.oregonstate.edu/ltermeta/ltersearch/dataaccess.aspx?docid=WE02601_v1.csv', (paste0(datapath, '/andrews-lter/andrews.csv')))
     download.file('http://andlter.forestry.oregonstate.edu/mdaccess/metadownload.aspx?dbcode=WE026', (paste0(datapath, '/andrews-lter/andrews-metadata.pdf')))
-  }
+
   
   if(!dir.exists(paste0(datapath, '/niwot'))) {
     
     dir.create(paste0(datapath, '/niwot'))
     
-    download.file('http://niwot.colorado.edu/data_csvs/smammals.jh.data.csv', (paste0(datapath, '/niwot/niwot.csv')))
+  }
+    
+    download.file('http://niwot.colorado.edu/data_csvs/smammals.jh.data.csv', (paste0(datapath, '/niwot/niwot-raw.csv')))
     download.file('http://niwot.colorado.edu/meta_data/smammals.jh.meta.txt', (paste0(datapath, '/niwot/niwot-metadata.txt')))
     
-  }
+
   
   if(!dir.exists(paste0(datapath, '/sev'))) {
     
     dir.create(paste0(datapath, '/sev'))
     
+  }
+    
     download.file('https://portal.lternet.edu/nis/dataviewer?packageid=knb-lter-sev.8.297976&entityid=d70c7027949ca1d8ae053eb10300dc0e', (paste0(datapath, '/sev/sev.csv')))
     download.file('https://portal.lternet.edu/nis/metadataviewer?packageid=knb-lter-sev.8.297976&contentType=application/xml', (paste0(datapath, '/sev/sev-metadata.')))
     
-  }
+
   
 }
 
 
 #' @title Process raw data in to the appropriate format. 
 #'
+#' @name ProcessAll
 #' @description Process all the datasets 
 #'#'
 #' @return NULL
@@ -52,7 +59,7 @@ process_raw_data <- function() {
 
 
 #' @title Process Andrews data in to the appropriate format. 
-#'
+#' @name ProcessAndrews
 #' @description Process Andrews smammal data
 #'#'
 #' @return NULL
@@ -65,55 +72,56 @@ process_andrews_data <- function() {
 }
 
 #' @title Process Niwot data in to the appropriate format. 
-#'
+#' @name ProcessNiwot
 #' @param datapath path to where data is 
 #' @description Process Niwot smammal data
 #' Initial cleaning from LTER website code generator
 #'
 #' @return NULL
 #'
+#' @export
 process_niwot_data <- function(datapath = here::here()){
   # Halfpenny, Jim. 2019. Small mammal disturbance data for Niwot Ridge from 1981-6-30 to 1990-8-23, yearly. http://niwot.colorado.edu 
   # http://niwot.colorado.edu/data/data/small-mammal-species-composition-data-for-niwot-ridge-1981-1990
   
-  niwot_raw <- read.csv(paste0(datapath, '/data/paper/raw/niwot/niwot.csv'), stringsAsFactors = F)
+  niwot_raw <- read.csv(paste0(datapath, '/data/paper/raw/niwot/niwot-raw.csv'), stringsAsFactors = F)
   
   niwot <- niwot_raw %>% 
-    filter(!is.na(weight)) %>%
-    mutate(species = as.character(species)) %>%
-    filter(species != "?MOUSE") %>%
-    filter(species != "?PIKAS") %>%
-    filter(species != "CHIPSP") %>%
-    filter(species != "VOLESP") %>%
-    select(collector, date, species, weight, condition, habitat)
+    dplyr::filter(!is.na(weight)) %>%
+    dplyr::mutate(species = as.character(species)) %>%
+    dplyr::filter(species != "?MOUSE") %>%
+    dplyr::filter(species != "?PIKAS") %>%
+    dplyr::filter(species != "CHIPSP") %>%
+    dplyr::filter(species != "VOLESP") %>%
+    dplyr::select(collector, date, species, weight, condition, habitat)
   
   species_means <- niwot %>%
-    select(species, weight) %>%
-    group_by(species) %>%
-    summarize(mean.weight = mean(weight), n.captures = n()) %>%
-    ungroup()
+    dplyr::select(species, weight) %>%
+    dplyr::group_by(species) %>%
+    dplyr::summarize(mean.weight = mean(weight), n.captures = n()) %>%
+    dplyr::ungroup()
   
   big_species <- species_means %>%
-    filter(mean.weight > 400) %>%
-    select(species)
+    dplyr::filter(mean.weight > 400) %>%
+    dplyr::select(species)
   
   niwot <- niwot %>%
-    filter(!(species %in% big_species$species))
+    dplyr::filter(!(species %in% big_species$species))
   
   # Still 1 too many species, based on paper.
   # Removing pocket gophers because they were only trapped for the first two years? 
   niwot <- niwot %>%
-    filter(species != 'THOTAL')
+    dplyr::filter(species != 'THOTAL')
   
   niwot <- niwot %>% 
-    select(species, weight)
+    dplyr::select(species, weight)
   
-  processedpath = paste0(datapath, '/data/paper/processed/niwot')
+  processedpath = paste0(datapath, '/data/paper/processed')
   if(!dir.exists(processedpath)) {
     dir.create(processedpath)
   }
   
-  write.csv(niwot, paste0(processedpath, '/niwot_processed.csv'))
+  write.csv(niwot, paste0(processedpath, '/niwot-processed.csv'))
  
   return(TRUE)
    
@@ -123,6 +131,8 @@ process_niwot_data <- function(datapath = here::here()){
 
 
 #' @title Process Sevilleta data in to the appropriate format. 
+#'
+#' @name ProcessSev
 #'
 #' @description Process Sevilleta smammal data
 #' Initial cleaning from LTER website code generator
