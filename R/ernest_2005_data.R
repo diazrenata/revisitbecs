@@ -109,7 +109,7 @@ process_andrews_data <- function(datapath = here::here()) {
     dir.create(processedpath)
   }
   
-  write.csv(andrews, paste0(processedpath, '/andrews-processed.csv'))
+  write.csv(andrews, paste0(processedpath, '/andrews-processed.csv'), row.names = F)
   
   return(TRUE)
   
@@ -165,7 +165,7 @@ process_niwot_data <- function(datapath = here::here()){
     dir.create(processedpath)
   }
   
-  write.csv(niwot, paste0(processedpath, '/niwot-processed.csv'))
+  write.csv(niwot, paste0(processedpath, '/niwot-processed.csv'), row.names = F)
   
   return(TRUE)
   
@@ -268,7 +268,7 @@ process_sev_data <- function(datapath = here::here()){
       dplyr::filter(location == this_location) %>%
       dplyr::select(-location)
     
-    write.csv(this_sev, paste0(processedpath, '/sev-', this_location, '-processed.csv'))
+    write.csv(this_sev, paste0(processedpath, '/sev-', this_location, '-processed.csv'), row.names = F)
     
   }
   
@@ -306,7 +306,7 @@ process_portal_data <- function(datapath = here::here(),
     dir.create(processedpath)
   }
   
-  write.csv(portal, paste0(processedpath, '/portal-processed.csv'))
+  write.csv(portal, paste0(processedpath, '/portal-processed.csv'), row.names = F)
   
   
   

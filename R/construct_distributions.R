@@ -9,10 +9,10 @@
 #'
 #' @export
 
-make_community_table <- function(sim_community, ln_units = 0.2)
+make_community_table <- function(community, ln_units = 0.2)
 {
-  
-  community_df <-sim_community %>%
+  colnames(community) <- c('individual_species_ids', 'individual_sizes')
+  community_df <-community %>%
     dplyr::mutate(individual_energy = individual_sizes ^ 0.75,
                   ln_mass = log(individual_sizes), 
                   size_class = ln_units * (floor(ln_mass/ln_units)),
