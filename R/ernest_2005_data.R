@@ -39,8 +39,7 @@ download_raw_paper_data <- function(datapath = here::here('data', 'paper', 'raw'
   }
   
   download.file('https://portal.lternet.edu/nis/dataviewer?packageid=knb-lter-sev.8.297976&entityid=d70c7027949ca1d8ae053eb10300dc0e', (paste0(datapath, '/sev/sev.csv')))
-  download.file('https://portal.lternet.edu/nis/metadataviewer?packageid=knb-lter-sev.8.297976&contentType=application/xml', (paste0(datapath, '/sev/sev-metadata.')))
-  
+  download.file('https://portal.lternet.edu/nis/metadataviewer?packageid=knb-lter-sev.8.297976', (paste0(datapath, '/sev/sev-metadata.html')))
   
   
 }
@@ -56,6 +55,11 @@ download_raw_paper_data <- function(datapath = here::here('data', 'paper', 'raw'
 #' @export
 
 process_raw_data <- function() {
+  process_andrews_data()
+  process_niwot_data()
+  process_sev_data()
+  process_portal_data()
+  return(TRUE)
 }
 
 
@@ -179,7 +183,9 @@ process_niwot_data <- function(datapath = here::here()){
 #'
 #' @return NULL
 #'
-process_sev_data <- function(datapath = here::here('data', 'paper', 'raw', 'sev')){
+#' @export
+#'
+process_sev_data <- function(datapath = here::here()){
   # FROM LTER WEBSITE #
   # Package ID: knb-lter-sev.8.297976 Cataloging System:https://pasta.lternet.edu.
   # Data set title: Small Mammal Mark-Recapture Population Dynamics at Core Research Sites at the Sevilleta National Wildlife Refuge, New Mexico (1989 - present).
@@ -190,42 +196,119 @@ process_sev_data <- function(datapath = here::here('data', 'paper', 'raw', 'sev'
   # Metadata Link: https://portal.lternet.edu/nis/metadataviewer?packageid=knb-lter-sev.8.297976
   # Stylesheet for metadata conversion into program: John H. Porter, Univ. Virginia, jporter@Virginia.edu 
   #
-  #install package tidyverse if not already installed
-  if(!require(tidyverse)){ install.packages("tidyverse") }  
-  library("tidyverse") 
-  infile1  <- paste0(datapath, '/sev.csv') 
+  infile1  <- paste0(datapath, '/data/paper/raw/sev/sev.csv') 
   # This creates a tibble named: dt1 
-  dt1 <-read_delim(infile1  
-                   ,delim=","   
-                   ,skip=1 
-                   , col_names=c( 
-                     "year",   
-                     "location",   
-                     "season",   
-                     "night",   
-                     "web",   
-                     "trap",   
-                     "recap",   
-                     "species",   
-                     "sex",   
-                     "age",   
-                     "reprod",   
-                     "mass"   ), 
-                   col_types=list(
-                     col_character(),  
-                     col_character(),  
-                     col_character(),  
-                     col_character(),  
-                     col_character(),  
-                     col_character(),  
-                     col_character(),  
-                     col_character(),  
-                     col_character(),  
-                     col_character(),  
-                     col_character(), 
-                     col_number() ), 
-                   na=c( "na", ".", " ","NA")  ) 
+  sev_raw <-readr::read_delim(infile1  
+                              ,delim=","   
+                              ,skip=1 
+                              , col_names=c( 
+                                "year",   
+                                "location",   
+                                "season",   
+                                "night",   
+                                "web",   
+                                "trap",   
+                                "recap",   
+                                "species",   
+                                "sex",   
+                                "age",   
+                                "reprod",   
+                                "mass"   ), 
+                              col_types=list(
+                                readr::col_character(),  
+                                readr::col_character(),  
+                                readr::col_character(),  
+                                readr::col_character(),  
+                                readr::col_character(),  
+                                readr::col_character(),  
+                                readr::col_character(),  
+                                readr::col_character(),  
+                                readr::col_character(),  
+                                readr::col_character(),  
+                                readr::col_character(), 
+                                readr::col_number() ), 
+                              na=c( "na", ".", " ","NA")  ) 
   # Observed issues when reading the data. An empty list is good!
-  problems(dt1) 
+  readr::problems(sev_raw) 
   
+  sev <- sev_raw %>%
+    dplyr::filter(year <= 1998, !is.na(mass))
+  
+  sev_means <- sev %>%
+    dplyr::select(species, mass) %>%
+    dplyr::group_by(species) %>%
+    dplyr::summarize(mean_weight = mean(mass), nind = dplyr::n())
+  
+  # I'm getting 26 species or 24 if you remove the unidentified ones.
+  
+  sev_unid <- c('onsp', 'pmsp')
+  
+  sev_means_unid <- sev %>%
+    dplyr::filter(!(species %in% sev_unid)) %>%
+    dplyr::select(species, mass) %>%
+    dplyr::group_by(species) %>%
+    dplyr::summarize(mean_weight = mean(mass), nind = dplyr::n())
+  
+  sev <- sev %>%
+    dplyr::filter(!(species %in% sev_unid)) %>%
+    dplyr::select(location, species, mass) %>%
+    dplyr::rename(weight = mass)
+  
+  sev_locations <- unique(sev$location)
+  
+  processedpath = paste0(datapath, '/data/paper/processed')
+  if(!dir.exists(processedpath)) {
+    dir.create(processedpath)
+  }
+  
+  for(i in 1:length(sev_locations)) {
+    this_location <- sev_locations[i]
+    
+    this_sev <- sev %>%
+      dplyr::filter(location == this_location) %>%
+      dplyr::select(-location)
+    
+    write.csv(this_sev, paste0(processedpath, '/sev-', this_location, '-processed.csv'))
+    
+  }
+  
+  return(TRUE)
+  
+}
+
+#' @title Process Portal data in to the appropriate format. 
+#'
+#' @name ProcessPortal
+#'
+#' @description Process Portal smammal data
+#' Using `portalr`
+#'
+#' @return NULL
+#'
+#' @export
+#'
+
+process_portal_data <- function(datapath = here::here(), 
+                             portaldatapath = '/Users/renatadiaz/Documents/GitHub/weecology/') {
+  
+  portal <- portalr::summarise_individual_rodents(path = portaldatapath, download_if_missing = F, clean = T)
+  
+  portal <- portal %>%
+    dplyr::filter(treatment == 'control', year %in% c(1977:1999), !is.na(wgt)) %>%
+    dplyr::select(species, wgt)
+  
+  portal_means <- portal %>%
+    dplyr::group_by(species) %>%
+    dplyr::summarize(meanwgt = mean(wgt), totaln = dplyr::n())
+  
+  processedpath = paste0(datapath, '/data/paper/processed')
+  if(!dir.exists(processedpath)) {
+    dir.create(processedpath)
+  }
+  
+  write.csv(portal, paste0(processedpath, '/portal-processed.csv'))
+  
+  
+  
+  return(TRUE)
 }

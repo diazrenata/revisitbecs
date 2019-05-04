@@ -5,7 +5,7 @@
 \alias{process_sev_data}
 \title{Process Sevilleta data in to the appropriate format.}
 \usage{
-process_sev_data(datapath = here::here("data", "paper", "raw", "sev"))
+process_sev_data(datapath = here::here())
 }
 \description{
 Process Sevilleta smammal data
