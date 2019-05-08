@@ -102,9 +102,9 @@ Compare each real BSED to 10000 bootstraps (DOI 95% interval)
 =============================================================
 
 ``` r
-nsamples = 100
+nsamples = 10000
 for(i in 1:ncommunities){ 
-  sampled_communities_doi <- replicate(nsamples, boostrap_unif_bsed_doi(real_communities[[i]]))
+  sampled_communities_doi <- replicate(nsamples, boostrap_unif_bsed_doi(communities[[i]]))
   
   real_doi <- doi(real_bseds[[i]]$total_energy_proportional)
   
@@ -115,11 +115,21 @@ for(i in 1:ncommunities){
 }
 ```
 
+    ## [1] 1
+    ## [1] 1
+    ## [1] 1
+    ## [1] 1
+    ## [1] 1
+    ## [1] 1
+    ## [1] 1
+    ## [1] 1
+    ## [1] 1
+
 Compare all pairwise communities BSEDs
 ======================================
 
 ``` r
-nsamples = 100
+nsamples = 10000
 
 all_pairs_matrix <- combn(1:ncommunities, m = 2)
 
@@ -129,7 +139,7 @@ for(i in 1:ncol(all_pairs_matrix)) {
   
   first = all_pairs_matrix[1, i]
     second = all_pairs_matrix[2, i]
-sampled_pair_doi <- replicate(nsamples, boostrap_crosscomm_bseds(real_communities[[first]], real_communities[[second]]))
+sampled_pair_doi <- replicate(nsamples, boostrap_crosscomm_bseds(communities[[first]], communities[[second]]))
 
 
 both_bseds <- real_bseds[[first]] %>%
@@ -146,9 +156,16 @@ p_comparison[i] <- p_greater_doi
 }
 
 p_comparison
+```
 
+    ##  [1] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+    ## [36] 0
+
+``` r
 length(which(p_comparison > 0.05)) / length(p_comparison)
 ```
+
+    ## [1] 0
 
 Construct BSDs for real communities
 ===================================

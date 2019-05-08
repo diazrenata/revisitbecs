@@ -10,10 +10,9 @@
 #' @export
 
 boostrap_unif_bsed_doi <- function(community_df){
+  colnames(community_df) <- c("individual_species_ids", "individual_sizes")
   
-  sampled_community <- community_df  %>%
-    dplyr::select(-individual_species_ids)
-  
+  sampled_community <- community_df
   sampled_community$individual_sizes <- runif(n = nrow(community_df),
                                               min = min(community_df$individual_sizes),
                                               max = max(community_df$individual_sizes))
@@ -42,11 +41,9 @@ boostrap_crosscomm_bseds <- function(community_a,
                                      community_b)
 {
   
-  bootstrap_a <- community_a %>%
-    dplyr::select(-individual_species_ids)
+  colnames(community_a) <- c('individual_species_ids', 'individual_sizes')
+  colnames(community_b) <- c('individual_species_ids', 'individual_sizes')
   
-  bootstrap_b <- community_b %>%
-    dplyr::select(-individual_species_ids)
   
   nind_a = as.integer(nrow(community_a))
   nind_b = as.integer(nrow(community_b))
@@ -61,8 +58,8 @@ boostrap_crosscomm_bseds <- function(community_a,
   resampled_a = pool[random_indices_a]
   resampled_b = pool[random_indices_b]
   
-  bootstrap_a$individual_sizes <- resampled_a
-  bootstrap_b$individual_sizes <- resampled_b
+  bootstrap_a <- as.data.frame(cbind(random_indices_a, resampled_a))
+  bootstrap_b <- as.data.frame(cbind(random_indices_b, resampled_b))
   
   bootstrap_a_bsed <- make_community_table(bootstrap_a) %>%
     make_bsed()
